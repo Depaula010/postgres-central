@@ -1,0 +1,48 @@
+name: Deploy Postgres Central
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚚 Conectar e Atualizar via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_PRIVATE_KEY }}
+          port: 22
+          script: |
+            # 1. Entrar na pasta do projeto (Caminho que validamos no servidor)
+            cd /root/database-central
+            
+            # 2. Atualizar o código (git pull)
+            # A chave pública deste projeto já deve estar no GitHub
+            git pull origin main
+            
+            # 3. Garantir que a rede externa existe (conforme seu README)
+            docker network create rede-global || true
+            
+            # 4. Recriar os containers
+            # --build: Garante que alterações nas configs/Dockerfiles sejam aplicadas
+            docker compose -f docker-compose.yml up -d --build --remove-orphans
+            
+            # 5. Limpeza de imagens antigas (Economia de espaço)
+            docker image prune -f
+
+      # --- OPCIONAL: Notificação no WhatsApp ---
+      # Requer os Secrets: API_SECRET_KEY e ADMIN_PHONE
+      # Se não quiser usar agora, pode remover ou comentar este bloco
+      - name: 📱 Notificar WhatsApp
+        if: success()
+        run: |
+          curl -X POST http://${{ secrets.VPS_HOST }}:3000/enviar-mensagem \
+          -H "Content-Type: application/json" \
+          -H "x-api-key: ${{ secrets.API_SECRET_KEY }}" \
+          -d '{"numero": "${{ secrets.ADMIN_PHONE }}", "mensagem": "🗄️ *Deploy Database Concluído!*\n\nA infraestrutura do PostgreSQL Central foi atualizada com sucesso."}'
+        continue-on-error: true
