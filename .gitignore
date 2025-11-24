@@ -1,0 +1,24 @@
+# Secrets e dados sensíveis
+.env
+.env.local
+.env.*.local
+
+# Certificados SSL
+ssl/private/*.key
+ssl/private/*.pem
+
+# Backups
+backups/*.sql
+backups/*.gz
+backups/*.enc
+backups/*.dump
+
+# Logs
+logs/*.log
+logs/postgresql/*.log
+
+# Dados do banco (persistência Docker)
+data/
+
+# Senhas de backup
+secrets/
