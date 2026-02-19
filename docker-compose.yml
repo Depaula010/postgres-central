@@ -12,6 +12,7 @@ services:
 
     networks:
       - rede-interna
+      - rede-global
 
     environment:
       # Credenciais via variáveis de ambiente
@@ -103,3 +104,7 @@ networks:
         - subnet: 172.20.0.0/16
     driver_opts:
       com.docker.network.bridge.name: br-postgres
+
+  # Rede compartilhada com o backend (AppControleFinanceiro)
+  rede-global:
+    external: true
