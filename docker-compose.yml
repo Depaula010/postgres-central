@@ -5,77 +5,77 @@ services:
     image: postgres:15-alpine
     container_name: postgres-central
     restart: unless-stopped
-    
+
     # SEGURANÇA: Bind apenas localhost (não expor publicamente)
     ports:
       - "127.0.0.1:${DB_PORT:-5432}:5432"
-    
+
     networks:
       - rede-interna
-    
+
     environment:
       # Credenciais via variáveis de ambiente
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
-      
+
       # Autenticação forte SCRAM-SHA-256
       - POSTGRES_INITDB_ARGS=--data-checksums --auth-host=scram-sha-256
       - POSTGRES_HOST_AUTH_METHOD=scram-sha-256
-      
+
       # Diretório de dados
       - PGDATA=/var/lib/postgresql/data/pgdata
-    
+
     env_file:
       - .env
-    
+
     volumes:
       # Dados persistentes
       - pgdata:/var/lib/postgresql/data
-      
+
       # Configurações customizadas
       - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
       - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
-      
+
       # Certificados SSL (criar com script generate-ssl-certs.sh)
       - ./ssl/certs:/etc/ssl/certs:ro
       - ./ssl/private:/etc/ssl/private:ro
-      
+
       # Scripts de inicialização
       - ./init-scripts:/docker-entrypoint-initdb.d:ro
-      
+
       # Logs
       - ./logs:/var/log/postgresql
-    
+
     command:
       - "postgres"
       - "-c"
       - "config_file=/etc/postgresql/postgresql.conf"
       - "-c"
       - "hba_file=/etc/postgresql/pg_hba.conf"
-    
+
     # Healthcheck
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ${DB_NAME}"]
+      test: [ "CMD-SHELL", "PGPASSWORD=${DB_PASSWORD} pg_isready -h 127.0.0.1 -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 60s
-    
+
     # Segurança adicional
     security_opt:
       - no-new-privileges:true
-    
+
     cap_drop:
       - ALL
-    
+
     cap_add:
       - CHOWN
       - FOWNER
       - SETGID
       - SETUID
       - DAC_OVERRIDE
-    
+
     # Limites de recursos (ajustar conforme necessidade)
     deploy:
       resources:
@@ -85,7 +85,7 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-    
+
     labels:
       - "com.example.description=PostgreSQL Database - Secure Configuration"
       - "com.example.environment=production"
@@ -97,7 +97,7 @@ volumes:
 networks:
   rede-interna:
     driver: bridge
-    internal: false  # Mudar para 'true' se banco não precisar acesso externo
+    internal: false # Mudar para 'true' se banco não precisar acesso externo
     ipam:
       config:
         - subnet: 172.20.0.0/16
